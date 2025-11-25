@@ -1,10 +1,11 @@
 import multer from "multer";
-import { cloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "./cloudinary.config";
+import pkg from "multer-storage-cloudinary";
+const { CloudinaryStorage } = pkg;
+import cloudinary from "./cloudinary.config.js";
 
-const storage = cloudinaryStorage({
+const storage = new CloudinaryStorage({
   cloudinary,
-  parms: {
+  params: {
     folder: "anonymous_dominators",
     allowedFormats: ["jpg", "png", "jpeg", "gif"],
   },

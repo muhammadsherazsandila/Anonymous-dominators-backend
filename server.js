@@ -1,13 +1,15 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import "./db/mongoose.js";
 import user_router from "./routes/user.route.js";
 import post_router from "./routes/post.route.js";
 import home_router from "./routes/home.route.js";
 dotenv.config();
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
+app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/", home_router);

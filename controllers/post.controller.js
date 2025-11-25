@@ -1,30 +1,20 @@
-import Post from "../models/post.model";
-import User from "../models/user.model";
-import { formate_date_time } from "../utils/date_time_formater";
-import { delete_cloudinary_image } from "../utils/delete_cloudinary_image";
-import { verify_jwt_token } from "../utils/token";
+import Post from "../models/post.model.js";
+import User from "../models/user.model.js";
+import { formate_date_time } from "../utils/date_time_formater.js";
+import { delete_cloudinary_image } from "../utils/delete_cloudinary_image.js";
+import { verify_jwt_token } from "../utils/token.js";
 
 export const create_post = async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  if (!token) {
-    return res.status(200).json({ message: "Token not found" });
-  }
-  const payload = verify_jwt_token(token);
-  if (!payload) {
-    return res.status(200).json({ message: "Invalid token" });
-  }
-  const user = await User.findOne({ email: payload.email });
-  if (!user) {
-    return res.status(200).json({ message: "User not found" });
-  }
-
   const { description, code, day } = req.body;
   const post = await Post.findOne({ day });
-  if (post) {
+  const user = await User.findOne({ email: req.user.email });
+  if (post && post.user.toString() === user._id.toString()) {
     return res
       .status(200)
       .json({ message: "Post for this day already exists." });
   }
+
+  const updated_user = await User.findOne({ email: req.user.email });
   const new_post = new Post({
     description,
     images: req.files
@@ -34,12 +24,12 @@ export const create_post = async (req, res) => {
       : [],
     code,
     day,
-    user: user._id,
+    user: updated_user._id,
   });
   await new_post.save();
 
-  user.posts.push(new_post._id);
-  await user.save();
+  updated_user.posts.push(new_post._id);
+  await updated_user.save();
 
   res
     .status(200)
@@ -47,15 +37,7 @@ export const create_post = async (req, res) => {
 };
 
 export const delete_post = async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  if (!token) {
-    return res.status(200).json({ message: "Token not found" });
-  }
-  const payload = verify_jwt_token(token);
-  if (!payload) {
-    return res.status(200).json({ message: "Invalid token" });
-  }
-  const user = await User.findOne({ email: payload.email });
+  const user = await User.findOne({ email: req.user.email });
   if (!user) {
     return res.status(200).json({ message: "User not found" });
   }
@@ -70,14 +52,14 @@ export const delete_post = async (req, res) => {
   for (const image of post.images) {
     await delete_cloudinary_image(image.public_id);
   }
-  await post.remove();
+  await Post.findByIdAndDelete(id);
   user.posts.pull(post._id);
   await user.save();
-  res.status(200).json({ message: "Post deleted successfully" });
+  res.status(200).json({ message: "Post deleted successfully", status: 200 });
 };
 
 export const get_all_posts = async (req, res) => {
-  const posts = await Post.find().populate("user", "name email");
+  const posts = await Post.find().populate("user");
   const formatted_posts = posts.map((post) => ({
     ...post,
     user: {
@@ -89,4 +71,38 @@ export const get_all_posts = async (req, res) => {
     updatedAt: formate_date_time(post.updatedAt),
   }));
   res.status(200).json({ posts: formatted_posts });
+};
+
+export const update_post = async (req, res) => {
+  const user = await User.findOne({ email: req.user.email });
+  if (!user) {
+    return res.status(200).json({ message: "User not found" });
+  }
+  const { id } = req.params;
+  const post = await Post.findById(id);
+  if (!post) {
+    return res.status(200).json({ message: "Post not found" });
+  }
+  if (post.user.toString() !== user._id.toString()) {
+    return res.status(200).json({ message: "Unauthorized" });
+  }
+  const { description, code, day, existingImages, removedImages } = req.body;
+  const newImages = req.files;
+  const updatedImages = [...JSON.parse(existingImages)];
+
+  for (const image of newImages) {
+    updatedImages.push({ url: image.path, public_id: image.filename });
+  }
+  post.description = description;
+  post.code = code;
+  post.day = day;
+  post.images = updatedImages;
+  post.updatedAt = Date.now();
+  await post.save();
+
+  for (const image of JSON.parse(removedImages)) {
+    await delete_cloudinary_image(image.public_id);
+  }
+
+  res.status(200).json({ message: "Post updated successfully", post });
 };
