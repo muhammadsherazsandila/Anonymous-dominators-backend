@@ -2,7 +2,6 @@ import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import { formate_date_time } from "../utils/date_time_formater.js";
 import { delete_cloudinary_image } from "../utils/delete_cloudinary_image.js";
-import { verify_jwt_token } from "../utils/token.js";
 
 export const create_post = async (req, res) => {
   const { description, code, day } = req.body;
@@ -30,10 +29,17 @@ export const create_post = async (req, res) => {
 
   updated_user.posts.push(new_post._id);
   await updated_user.save();
-
+  const updated_post = {
+    ...new_post.toObject(),
+    user: {
+      _id: updated_user._id,
+    },
+    createdAt: formate_date_time(new_post.createdAt),
+    updatedAt: formate_date_time(new_post.updatedAt),
+  };
   res
     .status(200)
-    .json({ message: "Post created successfully", post: new_post });
+    .json({ message: "Post created successfully", post: updated_post });
 };
 
 export const delete_post = async (req, res) => {
@@ -55,21 +61,34 @@ export const delete_post = async (req, res) => {
   await Post.findByIdAndDelete(id);
   user.posts.pull(post._id);
   await user.save();
-  res.status(200).json({ message: "Post deleted successfully", status: 200 });
-};
-
-export const get_all_posts = async (req, res) => {
-  const posts = await Post.find().populate("user");
-  const formatted_posts = posts.map((post) => ({
-    ...post,
+  const updated_post = {
+    ...post.toObject(),
     user: {
-      ...post.user,
-      createdAt: formate_date_time(post.user.createdAt),
-      updatedAt: formate_date_time(post.user.updatedAt),
+      _id: user._id,
     },
     createdAt: formate_date_time(post.createdAt),
     updatedAt: formate_date_time(post.updatedAt),
-  }));
+  };
+  res
+    .status(200)
+    .json({ message: "Post deleted successfully", post: updated_post });
+};
+
+export const get_all_posts = async (req, res) => {
+  const posts = await Post.find().populate("user", "_id");
+
+  const formatted_posts = posts.map((post) => {
+    const p = post.toObject(); // <-- FIX
+    return {
+      ...p,
+      user: {
+        ...p.user,
+      },
+      createdAt: formate_date_time(p.createdAt),
+      updatedAt: formate_date_time(p.updatedAt),
+    };
+  });
+
   res.status(200).json({ posts: formatted_posts });
 };
 
@@ -88,6 +107,15 @@ export const update_post = async (req, res) => {
   }
   const { description, code, day, existingImages, removedImages } = req.body;
   const newImages = req.files;
+  const existing_post = await Post.findOne({ day: day, user: user._id });
+  if (existing_post._id.toString() !== post._id.toString()) {
+    for (const image of newImages) {
+      await delete_cloudinary_image(image.filename);
+    }
+    return res
+      .status(200)
+      .json({ message: "Post for this day already exists." });
+  }
   const updatedImages = [...JSON.parse(existingImages)];
 
   for (const image of newImages) {
@@ -104,5 +132,15 @@ export const update_post = async (req, res) => {
     await delete_cloudinary_image(image.public_id);
   }
 
-  res.status(200).json({ message: "Post updated successfully", post });
+  const updated_post = {
+    ...post.toObject(),
+    user: {
+      _id: user._id,
+    },
+    createdAt: formate_date_time(post.createdAt),
+    updatedAt: formate_date_time(post.updatedAt),
+  };
+  res
+    .status(200)
+    .json({ message: "Post updated successfully", post: updated_post });
 };

@@ -1,23 +1,19 @@
 import mongoose from "mongoose";
 
-const userShema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    profilePic: {
-      type: {
-        url: String,
-        public_id: String,
-      },
-      required: false,
+const userShema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  profilePic: {
+    type: {
+      url: String,
+      public_id: String,
     },
-    OTP: { type: String, required: false },
-    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
-    createdAt: { type: Date, default: Date.now },
+    required: false,
   },
-  { timestamps: true }
-);
+  reset_token: { type: String, required: false },
+  posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+});
 
 const User = mongoose.model("User", userShema);
 
