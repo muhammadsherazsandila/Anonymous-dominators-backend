@@ -229,7 +229,7 @@ export const delete_account = async (req, res) => {
     await delete_cloudinary_image(user.profilePic.public_id);
   }
 
-  const user_posts = await Post.find({ author: user._id });
+  const user_posts = await Post.find({ user: user._id });
   for (const post of user_posts) {
     for (const image of post.images) {
       await delete_cloudinary_image(image.public_id);
