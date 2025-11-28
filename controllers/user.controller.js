@@ -234,8 +234,8 @@ export const delete_account = async (req, res) => {
     for (const image of post.images) {
       await delete_cloudinary_image(image.public_id);
     }
-    await Post.findByIdAndDelete(post._id);
   }
+  await Post.deleteMany({ user: user._id });
 
   await User.findByIdAndDelete(user._id);
   res
