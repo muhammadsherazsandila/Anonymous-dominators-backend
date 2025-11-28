@@ -24,7 +24,12 @@ export const register_user = async (req, res) => {
   res.status(200).json({
     message: "User registered successfully",
     token: generate_jwt_token({ email: newUser.email }),
-    user: newUser,
+    user: {
+      _id: newUser._id,
+      name: newUser.name,
+      posts: newUser.posts,
+      profilePic: newUser.profilePic,
+    },
   });
 };
 
@@ -42,7 +47,12 @@ export const login_user = async (req, res) => {
   res.status(200).json({
     message: "User logged in successfully",
     token: generate_jwt_token({ email: user.email }),
-    user,
+    user: {
+      _id: user._id,
+      name: user.name,
+      posts: user.posts,
+      profilePic: user.profilePic,
+    },
   });
 };
 
@@ -59,7 +69,15 @@ export const token_based_authentication = async (req, res) => {
   if (!user) {
     return res.status(200).json({ message: "User not found" });
   }
-  res.status(200).json({ message: "User authenticated successfully", user });
+  res.status(200).json({
+    message: "User authenticated successfully",
+    user: {
+      _id: user._id,
+      name: user.name,
+      posts: user.posts,
+      profilePic: user.profilePic,
+    },
+  });
 };
 
 export const upload_profile_picture = async (req, res) => {
@@ -90,9 +108,16 @@ export const upload_profile_picture = async (req, res) => {
   };
 
   await user.save();
-  res
-    .status(200)
-    .json({ message: "Profile picture uploaded successfully", user });
+
+  res.status(200).json({
+    message: "Profile picture uploaded successfully",
+    user: {
+      _id: user._id,
+      name: user.name,
+      posts: user.posts,
+      profilePic: user.profilePic,
+    },
+  });
 };
 
 export const get_user_profile = async (req, res) => {
@@ -111,8 +136,10 @@ export const get_user_profile = async (req, res) => {
   res.status(200).json({
     message: "User profile fetched successfully",
     user: {
-      ...user._doc,
-      password: undefined,
+      _id: user._id,
+      name: user.name,
+      posts: user.posts,
+      profilePic: user.profilePic,
     },
   });
 };
@@ -181,7 +208,15 @@ export const updateName = async (req, res) => {
   }
   user.name = name;
   await user.save();
-  res.status(200).json({ message: "Name updated successfully", user });
+  res.status(200).json({
+    message: "Name updated successfully",
+    user: {
+      _id: user._id,
+      name: user.name,
+      posts: user.posts,
+      profilePic: user.profilePic,
+    },
+  });
 };
 
 export const delete_account = async (req, res) => {
