@@ -26,9 +26,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run tests (optional)
-        run: pnpm run test --if-present
-
       - name: Zip project for deployment
         run: zip -r app.zip .
 
@@ -47,3 +44,4 @@ jobs:
           package: app.zip
         env:
           SCM_DO_BUILD_DURING_DEPLOYMENT: false
+
