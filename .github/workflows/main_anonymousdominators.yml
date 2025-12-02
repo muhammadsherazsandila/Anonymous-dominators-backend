@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
+      - name: pnpm install
         run: |
           pnpm install
 
@@ -62,3 +62,4 @@ jobs:
           package: .
 
           
+
