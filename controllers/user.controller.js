@@ -93,9 +93,10 @@ export const upload_profile_picture = async (req, res) => {
   if (!user) {
     return res.status(200).json({ message: "User not found" });
   }
-  const file = req.file;
-  if (!file) {
-    return res.status(200).json({ message: "File not found" });
+
+  const picData = req.body;
+  if (!picData || !picData.url || !picData.public_id) {
+    return res.status(200).json({ message: "Invalid picture data" });
   }
 
   if (user.profilePic && user.profilePic.public_id) {
@@ -103,8 +104,8 @@ export const upload_profile_picture = async (req, res) => {
   }
 
   user.profilePic = {
-    url: file.path,
-    public_id: file.filename, // Assuming you have the public_id or filename from the upload process
+    url: picData.url,
+    public_id: picData.public_id,
   };
 
   await user.save();
